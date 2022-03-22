@@ -1,0 +1,93 @@
+https://paulallies.medium.com/clean-architecture-typescript-and-react-8e509098abfe
+Clean Architecture: Typescript and React
+By employing clean architecture, you can design applications with very low coupling and independent of technical implementation details, such as databases and frameworks. That way, the application becomes easy to maintain and flexible to change. It also becomes intrinsically testable. Here I’ll show how I structure my clean architecture projects. This time we are going to build a React todo application using Typescript.
+The folder/group structure of the project takes on the following form:
+├── Core 
+├── Data 
+├── Domain 
+└── Presentation
+Let’s start with the Domain Layer.
+This layer describes WHAT your project/application does. Let me explain, Many applications are built and structured in a way that you cannot understand what the application does by merely looking at the folder structure. Using a building of a house analogy, you can quickly identify what a building would look like and its functionality by viewing the floor plan and elevation of the building
+
+In the same way, the domain layer of our project should specify and describe WHAT our application does. In this folder, we would use models, repository interfaces, and use cases.
+├── Core
+├── Data
+├── Presentation
+└── Domain
+    ├── Model
+    │   ├── Todo.ts
+    │   └── User.ts
+    ├── Repository
+    │   ├── TodoRepository.ts
+    │   └── UserRepository.ts
+    └── UseCase
+        ├── Todo
+        │   ├── GetTodos.ts
+        │   ├── GetTodo.ts
+        │   ├── DeleteTodo.ts
+        │   ├── UpdateTodo.ts
+        │   └── CreateTodo.ts
+        └── User
+            ├── GetUsers.ts
+            ├── GetUser.ts
+            ├── DeleteUser.ts
+            ├── UpdateUser.ts
+            └── CreateUser.ts
+Model: A model typically represents a real-world object that is related to the problem. In this folder, we would typically keep classes to represent objects. e.g. Todo, User, Product, etc
+Repository: Container for all repository interfaces. The repository is a central place to keep all model-specific operations. In this case, the Todo repository interface would describe repository methods. The actual repository implementation will be kept in the Data layer.
+UseCases: Container to list all functionality of our application. e.g Get Todos, Delete Todo, Create Todo, Update Todo
+The PRESENTATION layer will keep all of the consumer-related code as to HOW the application will interact with the outside world. The presentation layer can be WebForms, Command Line Interface, API Endpoints, etc. In this case, it would be the screens for a List of Todos and its accompanying view model.
+├── Core
+├── Data
+├── Domain
+└── Presentation
+    └── Todo
+        └── TodoList
+            ├── TodoListViewModel.tsx
+            └── TodoListView.tsx
+The DATA layer will keep all the external dependency-related code as to HOW they are implemented:
+├── Core
+├── Domain
+├── Presentation
+└── Data
+    ├── Repository
+    │   ├── TodoRepositoryImpl.ts
+    └── DataSource
+        ├── TodoDataSource.ts
+        ├── API
+        │   ├── TodoAPIDataSourceImpl.ts
+        │   └── Entity
+        │       ├── TodoAPIEntity.ts
+        │       └── UserAPIEntity.ts
+        └── DB
+            ├── TodoDBDataSourceImpl.ts
+            └── Entity
+                ├── TodoDBEntity.ts
+                └── UserDBEntity.ts
+Repository: Repository implementations
+DataSource: All data source interfaces and entities. An entity represents a single instance of your domain object saved into the database as a record. It has some attributes that we represent as columns in our DB tables or API endpoints. We can’t control how data is modeled on the external data source, so these entities are required to be mapped from entities to domain models in the implementations
+and lastly, the CORE layer keep all the components that are common across all layers like constants or configs or dependency injection (which we won’t cover) Our first task would be always to start with the domain models and data entities. Let’s start with the model
+
+We need it to conform to Identifiable as we’re going to display these items in a list view.
+Next, let’s do the todo entity
+
+Let’s now write an interface for the TodoDatasource
+
+We have enough to write an implementation of this interface and we’ll call it TodoAPIImpl:
+
+Note: this data source’s getTodos function returns a list of Todo. So, we have to map TodoEntity -> Todo: Before we write our TodoRepositoryImpl let’s write the interface for that in the Domain layer
+
+Now that we have our todo repository, we can code up the GetTodos use case
+
+and then in turn we can write our presentation’s view model and view
+
+
+
+So to recap, the flow might look like something like this:
+
+Should use-cases reference repositories? Why not just call the data source directly from the use case or from the view model?
+We probably could, for a smaller project, but for a more scalable solution we might need to consider the following:
+The view model should only be concerned with calling some business logic and preparing the result for the view. In this case, our view models should only be invoking use cases.
+The use-case should hold business logic. In this case, todos need to be retrieved(we are not concerned with how are where it needs to be retrieved from), so the todo repository “getTodos” method must be invoked.
+The repository should be concerned with which data sources and services must be used to satisfy the use case request. We can see this more clearly as the project might grow into a more complex but still scalable structure:
+After the todos are retrieved from the API we would want to log something to the logging DB:
